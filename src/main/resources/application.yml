@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: srping-tutorial
+  datasource:
+    url: jdbc:mysql://localhost:3306/lamnc
+    username: lamnc
+    password: 123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 60000
+      maximum-pool-size: 25
+      minimum-idle: 5
+      idle-timeout: 60000
+      max-lifetime: 180000
+
+  jpa:
+    show-sql: on
+    generate-ddl: false
+    hibernate.ddl-auto: none
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8080
+  context-path: /api
