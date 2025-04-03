@@ -17,7 +17,7 @@ public class OtpEntity extends  BaseEntity{
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = false)
     private String phoneNumber;
 
     @Column(nullable = false)

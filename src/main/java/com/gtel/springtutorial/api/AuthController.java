@@ -1,5 +1,6 @@
 package com.gtel.springtutorial.api;
 
+import com.gtel.springtutorial.model.request.RegisterRequest;
 import com.gtel.springtutorial.service.AuthService;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +14,8 @@ public class AuthController {
     }
 
     @PostMapping(value = "/register")
-    public Object registerUser(@RequestBody(required = true) String phoneNum) {
-        return authService.register(phoneNum);
+    public Object registerUser(@RequestBody(required = true)RegisterRequest request) {
+        return authService.register(request);
     }
 
     @PostMapping(value = "/activate")
