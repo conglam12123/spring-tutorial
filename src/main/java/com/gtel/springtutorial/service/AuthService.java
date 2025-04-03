@@ -3,8 +3,12 @@ package com.gtel.springtutorial.service;
 import com.gtel.springtutorial.constant.Constant;
 import com.gtel.springtutorial.constant.Message;
 import com.gtel.springtutorial.constant.RegexConstant;
+import com.gtel.springtutorial.domains.OtpDomain;
 import com.gtel.springtutorial.exception.ApplicationException;
 import com.gtel.springtutorial.model.entity.UserEntity;
+import com.gtel.springtutorial.model.request.RegisterRequest;
+import com.gtel.springtutorial.model.response.RegisterResponse;
+import com.gtel.springtutorial.redis.entities.UserRegisterRedisEntity;
 import com.gtel.springtutorial.repository.UserRepo;
 import com.gtel.springtutorial.utils.ERROR_CODE;
 import com.gtel.springtutorial.utils.EncryptionUtils;
@@ -15,10 +19,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.regex.Pattern;
+
+import static com.gtel.springtutorial.utils.AppUtils.standardizePhoneNumber;
 
 @Slf4j
 @Service
@@ -32,20 +35,19 @@ public class AuthService {
 
     final OtpProducer otpProducer;
 
-    public Object register(String phoneNum) {
+    final OtpDomain otpDomain;
+
+    public Object register(RegisterRequest request) {
         try {
-            log.info("register: {}", phoneNum);
-            String validPhoneNum = validatePhoneNumber(phoneNum);
+            log.info("register: {}", request.getPhoneNumber());
+            // validate phoneNum
+            String validPhoneNum = validatePhoneNumber(request.getPhoneNumber());
             if (userRepo.existsByPhoneNumber(validPhoneNum))
                 throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_INVALID);
 
+            UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.genOtpWhenUserRegister(validPhoneNum, request.getPassword());
 
-
-
-            String otp = generateOTP();
-            redisService.save(getOtpKey(validPhoneNum), otp, 60L * 3);
-            otpProducer.sendOtp(validPhoneNum, otp);
-            return ResponseEntity.ok().body(Message.OK + otp);
+            return ResponseEntity.ok().body(new RegisterResponse(userRegisterRedisEntity));
 
         } catch (ApplicationException e) {
             log.error("register failed: {}", e.getMessage());
@@ -98,21 +100,6 @@ public class AuthService {
         return standardizePhoneNumber(phoneNum);
     }
 
-    private String standardizePhoneNumber(String phoneNum) {
-        if (!Pattern.matches(RegexConstant.VALID_PHONE_NUM, phoneNum)) {
-            return phoneNum
-                    .replaceFirst("^0", "84")
-                    .replaceFirst("\\+", "");
-        } else {
-            return phoneNum;
-        }
-    }
-
-    private static String generateOTP() {
-        Random random = new Random();
-        return String.valueOf(100000 + random.nextInt(900000));
-    }
-
     private String getOtpKey(String phoneNum) {
         return Constant.OTP_PREFIX + phoneNum;
     }
@@ -121,12 +108,4 @@ public class AuthService {
         if (!Pattern.matches(RegexConstant.PASSWORD_PATTERN, password))
             throw new ApplicationException(ERROR_CODE.PASSWORD_NOT_STRONG);
     }
-
-    public static long getSecondsUntilMidnight() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay();
-
-        return Duration.between(now, midnight).getSeconds();
-    }
-
 }
