@@ -1,10 +1,12 @@
 package com.gtel.springtutorial.model.entity;
 
+import com.gtel.springtutorial.redis.entities.UserRegisterRedisEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -27,8 +29,6 @@ public class UserEntity extends BaseEntity implements Serializable {
     @Column(name="status")
     private Integer status;
 
-
-
     public UserEntity(String phoneNumber, String password) {
         this.phoneNumber = phoneNumber;
         this.password = password;
@@ -36,4 +36,9 @@ public class UserEntity extends BaseEntity implements Serializable {
 
     }
 
+    public UserEntity(UserRegisterRedisEntity userRegisterRedisEntity) {
+        this.id = UUID.randomUUID().toString();
+        this.phoneNumber = userRegisterRedisEntity.getPhoneNumber();
+        this.password = userRegisterRedisEntity.getPassword();
+    }
 }

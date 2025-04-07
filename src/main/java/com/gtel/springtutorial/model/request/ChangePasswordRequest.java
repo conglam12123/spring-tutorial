@@ -3,11 +3,8 @@ package com.gtel.springtutorial.model.request;
 import lombok.Data;
 
 @Data
-public class RegisterRequest {
+public class ChangePasswordRequest {
     private String phoneNumber;
-
-    private String password;
-
-    private String otp;
-
+    private String oldPassword;
+    private String newPassword;
 }

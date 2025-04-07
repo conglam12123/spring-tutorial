@@ -16,6 +16,8 @@ public class OtpLimitEntity {
     @TimeToLive
     private long ttl;
 
+    String transactionId;
+
     public OtpLimitEntity(String phoneNumber) {
         this.phoneNumber = phoneNumber;
         this.ttl = AppUtils.getSecondsUntilMidnight();

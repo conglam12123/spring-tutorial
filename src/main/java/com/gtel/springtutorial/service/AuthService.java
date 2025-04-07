@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import static com.gtel.springtutorial.utils.AppUtils.standardizePhoneNumber;
@@ -44,6 +45,7 @@ public class AuthService {
             String validPhoneNum = validatePhoneNumber(request.getPhoneNumber());
             if (userRepo.existsByPhoneNumber(validPhoneNum))
                 throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_INVALID);
+            validatePassword(request.getPassword());
 
             UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.genOtpWhenUserRegister(validPhoneNum, request.getPassword());
 
@@ -58,32 +60,48 @@ public class AuthService {
     public Object activateAccountWithOtp(String phoneNum, String otp) {
         try {
             log.info("activateAccountWithOtp: {}", phoneNum);
-            String validPhoneNum = standardizePhoneNumber(phoneNum);
-            String storedOtp = redisService.get(getOtpKey(validPhoneNum));
-            if (!StringUtils.hasText(storedOtp)) {
-                throw new ApplicationException(ERROR_CODE.OTP_EXPIRED);
-            }
-            if (otp.equals(storedOtp)) {
-                return ResponseEntity.ok().body(Message.ACTIVATION_SUCCESS);
+            // validate
+            String validPhoneNum = validatePhoneNumber(phoneNum);
+
+            UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(validPhoneNum, otp);
+            if (Objects.nonNull(userRegisterRedisEntity)) {
+                userRepo.save(new UserEntity(userRegisterRedisEntity));
+
+                return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
+
             } else {
-                throw new ApplicationException(ERROR_CODE.INCORRECT_OTP);
+                throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No transaction for " + phoneNum + " found, please register first!");
             }
         } catch (ApplicationException e) {
             e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("[activateAccountWithOtp] failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
 
         }
     }
 
-    public Object updatePassword(String phoneNumber, String password) {
+    public Object updatePassword(String phoneNumber, String oldPass, String newPass) {
         try {
-            log.info("UpdatePassword for {}", phoneNumber);
+            log.info("[UpdatePassword] for {}", phoneNumber);
 
             String validPhoneNum = standardizePhoneNumber(phoneNumber);
 
-            validatePassword(password);
-            userRepo.save(new UserEntity(validPhoneNum, EncryptionUtils.sha256(password)));
+            validatePassword(newPass);
+
+            UserEntity userEntity = userRepo.findByPhoneNumber(validPhoneNum).orElse(null);
+
+            if (Objects.isNull(userEntity)) {
+                throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No user with phone number " + phoneNumber + " found!");
+            }
+
+            if (EncryptionUtils.bcryptPasswordCheck(oldPass, userEntity.getPassword())) {
+                userEntity.setPassword(EncryptionUtils.bcryptEncode(newPass));
+                userRepo.save(userEntity);
+
+            }
+            else  throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, Message.OLD_PASSWORD_NOT_MATCH);
+
+
             return ResponseEntity.ok().body(Message.PASSWORD_UPDATE_SUCCESS);
         } catch (ApplicationException e) {
             e.printStackTrace();
@@ -105,6 +123,9 @@ public class AuthService {
     }
 
     private void validatePassword(String password) {
+        if (!StringUtils.hasText(password)) {
+            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "Password required!");
+        }
         if (!Pattern.matches(RegexConstant.PASSWORD_PATTERN, password))
             throw new ApplicationException(ERROR_CODE.PASSWORD_NOT_STRONG);
     }
