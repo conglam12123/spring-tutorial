@@ -1,5 +1,6 @@
 package com.gtel.springtutorial.api;
 
+import com.gtel.springtutorial.model.request.ChangePasswordRequest;
 import com.gtel.springtutorial.model.request.RegisterRequest;
 import com.gtel.springtutorial.service.AuthService;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +20,12 @@ public class AuthController {
     }
 
     @PostMapping(value = "/activate")
-    public Object activateAccount(@RequestParam(required = true) String phoneNumber, @RequestParam(required = true) String otp) {
-        return authService.activateAccountWithOtp(phoneNumber, otp);
+    public Object activateAccount(@RequestBody RegisterRequest request) {
+        return authService.activateAccountWithOtp(request.getPhoneNumber(), request.getOtp());
     }
 
     @PostMapping(value = "/change-password")
-    public Object changePassword(@RequestParam(required = true) String phoneNumber, @RequestParam(required = true) String password) {
-        return authService.updatePassword(phoneNumber, password);
+    public Object changePassword(@RequestBody ChangePasswordRequest request) {
+        return authService.updatePassword(request.getPhoneNumber(), request.getOldPassword(), request.getNewPassword());
     }
 }
