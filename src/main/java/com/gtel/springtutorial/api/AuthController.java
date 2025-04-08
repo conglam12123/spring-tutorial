@@ -23,7 +23,7 @@ public class AuthController {
 
     @PostMapping(value = "/activate")
     public ResponseEntity<String> activateAccount(@RequestBody RegisterRequest request) {
-        return authService.activateAccountWithOtp(request.getPhoneNumber(), request.getOtp());
+        return authService.activateAccountWithOtp(request.getTransactionId(), request.getOtp());
     }
 
     @PostMapping(value = "/change-password")

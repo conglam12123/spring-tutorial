@@ -52,21 +52,14 @@ public class AuthService {
         return new RegisterResponse(userRegisterRedisEntity);
     }
 
-    public ResponseEntity<String> activateAccountWithOtp(String phoneNum, String otp) {
-        log.info("[activateAccountWithOtp]: activate account for phonenum {}", phoneNum);
-        // validate
-        String validPhoneNum = validatePhoneNumber(phoneNum);
+    public ResponseEntity<String> activateAccountWithOtp(String transactionId, String otp) {
+        log.info("[activateAccountWithOtp]: activate account for transaction {}", transactionId);
 
-        UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(validPhoneNum, otp);
-        if (Objects.nonNull(userRegisterRedisEntity)) {
-            userRepo.save(new UserEntity(userRegisterRedisEntity));
+        UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(transactionId, otp);
 
-            return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
+        userRepo.save(new UserEntity(userRegisterRedisEntity));
 
-        } else {
-            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No transaction for " + phoneNum + " found, please register first!");
-        }
-
+        return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
     }
 
     public ResponseEntity<String> updatePassword(String phoneNumber, String oldPass, String newPass) {
