@@ -19,8 +19,9 @@ public enum ERROR_CODE {
     INVALID_PARAMETER("ER_401", "Unauthorized"),
     RESOURCE_NOT_FOUND("ER_404", "Resource Not Found"),
     INTERNAL_SERVER_ERROR("ER_500", "Internal Server Error"),
-    OTP_EXPIRED("ER_111", "No OTP available for this number"),
-    INCORRECT_OTP("ER_112","Incorrect OTP!!");
+    OTP_EXPIRED("ER_111", "OTP expired!"),
+    INCORRECT_OTP("ER_112", "Incorrect OTP!!"),
+    NO_TRANSACTION_FOUND("ERR_113", "No transaction found!!");
 
     private final String errorCode;
     private final String message;

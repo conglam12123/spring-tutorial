@@ -48,51 +48,64 @@ public class OtpDomain {
         //send to queue
         producer.sendOtp(phoneNumber, otp);
 
-        return  userRegisterRedisEntity;
+        return userRegisterRedisEntity;
     }
 
     public OtpLimitEntity validateLimitOtpByPhoneNumber(String phoneNumber) {
 
         Optional<OtpLimitEntity> otpLimitEntity = otpLimitRepository.findById(phoneNumber);
 
-        if(otpLimitEntity.isEmpty()) {
+        if (otpLimitEntity.isEmpty()) {
             return new OtpLimitEntity(phoneNumber);
         }
 
-        OtpLimitEntity otpLimit  = otpLimitEntity.get();
+        OtpLimitEntity otpLimit = otpLimitEntity.get();
 
-        if(otpLimit.getDailyOtpCounter() >= 5) {
+        if (otpLimit.getDailyOtpCounter() >= 5) {
             log.warn("[validateLimitOtpByPhoneNumber] request fail : otp limit reached with phone {}", phoneNumber);
-            throw  new ApplicationException(ERROR_CODE.INVALID_REQUEST, "OTP Limit reached!!");
+            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "Daily OTP Limit reached!!");
         }
 
         return otpLimit;
     }
 
-    public UserRegisterRedisEntity checkOtpWhenUserSubmit (String phoneNumber, String otp) {
-        log.info("[checkOtpWhenUserSubmit]: user confirm otp {} for phone number {}", otp, phoneNumber);
-        // Kiểm tra số lần thử
-        Optional<OtpLimitEntity> otpLimitEntity = otpLimitRepository.findById(phoneNumber);
+    public UserRegisterRedisEntity checkOtpWhenUserSubmit(String transactionId, String otp) {
+        log.info("[checkOtpWhenUserSubmit]: activate transaction {} --> START", transactionId);
+        //Kiểm tra transaction có tồn tại không
+        Optional<UserRegisterRedisEntity> userRegisterOpt = userRegisterRedisRepository.findById(transactionId);
+        if (userRegisterOpt.isEmpty()) {
+            log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: {}", transactionId, ERROR_CODE.NO_TRANSACTION_FOUND.getMessage());
 
-        if(otpLimitEntity.isEmpty()) {
-            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No available OTP for phone number " + phoneNumber );
+            throw new ApplicationException(ERROR_CODE.NO_TRANSACTION_FOUND);
         }
-        OtpLimitEntity entity = otpLimitEntity.get();
 
-        // Kiểm tra nội dung OTP đúng chưa
-        UserRegisterRedisEntity userEntity = userRegisterRedisRepository.findById(entity.getTransactionId()).orElse(null);
-        if(Objects.isNull(userEntity)) {
-            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No transaction available for phone Number " + phoneNumber);
-        }
-        if(otp.equals(userEntity.getOtp())) {
-            userEntity.setPassword(EncryptionUtils.bcryptEncode(userEntity.getPassword()));
-            return userEntity;
-        }
-        else  {
-            log.warn("[checkOtpWhenUserSubmit]: failed: user sent wrong OTP for transaction: {}", entity.getTransactionId());
+        UserRegisterRedisEntity userEntity = userRegisterOpt.get();
+
+        // kiểm tra hiệu lực otp
+        if (!otp.equals(userEntity.getOtp())) {
+
+            log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: ", transactionId, ERROR_CODE.INCORRECT_OTP.getMessage());
             userEntity.setOtpFail(userEntity.getOtpFail() + 1);
-            userRegisterRedisRepository.save(userEntity);
-            return null;
+            if (userEntity.getOtpFail() >= 5) {
+                userRegisterRedisRepository.deleteById(transactionId);
+            } else {
+                userRegisterRedisRepository.save(userEntity);
+            }
+            throw new ApplicationException(ERROR_CODE.INCORRECT_OTP);
+
+
+        } else {
+            if ((System.currentTimeMillis() / 1000) > userEntity.getOtpExpiredTime()) {
+                log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: {}", transactionId, ERROR_CODE.OTP_EXPIRED.getMessage());
+
+                throw new ApplicationException(ERROR_CODE.OTP_EXPIRED);
+            }
+
+            userEntity.setPassword(EncryptionUtils.bcryptEncode(userEntity.getPassword()));
+
+            log.info("[checkOtpWhenUserSubmit] for transaction {} ---> SUCCESS", transactionId);
+
+            return userEntity;
         }
 
     }

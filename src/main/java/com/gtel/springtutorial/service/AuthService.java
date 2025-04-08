@@ -38,76 +38,53 @@ public class AuthService {
 
     final OtpDomain otpDomain;
 
-    public Object register(RegisterRequest request) {
-        try {
-            log.info("register: {}", request.getPhoneNumber());
-            // validate phoneNum
-            String validPhoneNum = validatePhoneNumber(request.getPhoneNumber());
-            if (userRepo.existsByPhoneNumber(validPhoneNum))
-                throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_INVALID);
-            validatePassword(request.getPassword());
+    public RegisterResponse register(RegisterRequest request) {
 
-            UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.genOtpWhenUserRegister(validPhoneNum, request.getPassword());
+        log.info("[register]: {}", request.getPhoneNumber());
+        // validate phoneNum
+        String validPhoneNum = validatePhoneNumber(request.getPhoneNumber());
+        if (userRepo.existsByPhoneNumber(validPhoneNum))
+            throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_INVALID);
+        validatePassword(request.getPassword());
 
-            return ResponseEntity.ok().body(new RegisterResponse(userRegisterRedisEntity));
+        UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.genOtpWhenUserRegister(validPhoneNum, request.getPassword());
 
-        } catch (ApplicationException e) {
-            log.error("register failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return new RegisterResponse(userRegisterRedisEntity);
     }
 
-    public Object activateAccountWithOtp(String phoneNum, String otp) {
-        try {
-            log.info("activateAccountWithOtp: {}", phoneNum);
-            // validate
-            String validPhoneNum = validatePhoneNumber(phoneNum);
+    public ResponseEntity<String> activateAccountWithOtp(String transactionId, String otp) {
+        log.info("[activateAccountWithOtp]: activate account for transaction {}", transactionId);
 
-            UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(validPhoneNum, otp);
-            if (Objects.nonNull(userRegisterRedisEntity)) {
-                userRepo.save(new UserEntity(userRegisterRedisEntity));
+        UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(transactionId, otp);
 
-                return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
+        userRepo.save(new UserEntity(userRegisterRedisEntity));
 
-            } else {
-                throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No transaction for " + phoneNum + " found, please register first!");
-            }
-        } catch (ApplicationException e) {
-            e.printStackTrace();
-            log.error("[activateAccountWithOtp] failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-
-        }
+        return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
     }
 
-    public Object updatePassword(String phoneNumber, String oldPass, String newPass) {
-        try {
-            log.info("[UpdatePassword] for {}", phoneNumber);
+    public ResponseEntity<String> updatePassword(String phoneNumber, String oldPass, String newPass) {
 
-            String validPhoneNum = standardizePhoneNumber(phoneNumber);
+        log.info("[UpdatePassword] for {}", phoneNumber);
 
-            validatePassword(newPass);
+        String validPhoneNum = standardizePhoneNumber(phoneNumber);
 
-            UserEntity userEntity = userRepo.findByPhoneNumber(validPhoneNum).orElse(null);
+        validatePassword(newPass);
 
-            if (Objects.isNull(userEntity)) {
-                throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No user with phone number " + phoneNumber + " found!");
-            }
+        UserEntity userEntity = userRepo.findByPhoneNumber(validPhoneNum).orElse(null);
 
-            if (EncryptionUtils.bcryptPasswordCheck(oldPass, userEntity.getPassword())) {
-                userEntity.setPassword(EncryptionUtils.bcryptEncode(newPass));
-                userRepo.save(userEntity);
-
-            }
-            else  throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, Message.OLD_PASSWORD_NOT_MATCH);
-
-
-            return ResponseEntity.ok().body(Message.PASSWORD_UPDATE_SUCCESS);
-        } catch (ApplicationException e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+        if (Objects.isNull(userEntity)) {
+            throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, "No user with phone number " + phoneNumber + " found!");
         }
+
+        if (EncryptionUtils.bcryptPasswordCheck(oldPass, userEntity.getPassword())) {
+            userEntity.setPassword(EncryptionUtils.bcryptEncode(newPass));
+            userRepo.save(userEntity);
+
+        } else throw new ApplicationException(ERROR_CODE.INVALID_REQUEST, Message.OLD_PASSWORD_NOT_MATCH);
+
+
+        return ResponseEntity.ok().body(Message.PASSWORD_UPDATE_SUCCESS);
+
 
     }
 
