@@ -1,9 +1,13 @@
 package com.gtel.springtutorial.exception;
 
 import com.gtel.springtutorial.utils.ERROR_CODE;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Map;
 
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class ApplicationException extends RuntimeException{
     private String code;
     private Map<String, Object> data;
