@@ -30,6 +30,8 @@ public class OtpDomain {
 
     private final OtpProducer producer;
 
+    private static final Random random = new Random();
+
     public UserRegisterRedisEntity genOtpWhenUserRegister(String phoneNumber, String password) {
         log.info("[genOtpWhenUserRegister] START with phone {}", phoneNumber);
         //validate limit
@@ -44,9 +46,6 @@ public class OtpDomain {
         otpLimit.setDailyOtpCounter(otpLimit.getDailyOtpCounter() + 1);
         otpLimit.setTransactionId(transactionId);
         otpLimitRepository.save(otpLimit);
-
-        //send to queue
-        producer.sendOtp(phoneNumber, otp);
 
         return userRegisterRedisEntity;
     }
@@ -84,7 +83,7 @@ public class OtpDomain {
         // kiểm tra hiệu lực otp
         if (!otp.equals(userEntity.getOtp())) {
 
-            log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: ", transactionId, ERROR_CODE.INCORRECT_OTP.getMessage());
+            log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: {}", transactionId, ERROR_CODE.INCORRECT_OTP.getMessage());
             userEntity.setOtpFail(userEntity.getOtpFail() + 1);
             if (userEntity.getOtpFail() >= 5) {
                 userRegisterRedisRepository.deleteById(transactionId);
@@ -96,7 +95,7 @@ public class OtpDomain {
 
         } else {
             if ((System.currentTimeMillis() / 1000) > userEntity.getOtpExpiredTime()) {
-                log.error("[checkOtpWhenUserSubmit] - activate transaction {} FAILED: {}", transactionId, ERROR_CODE.OTP_EXPIRED.getMessage());
+                log.error("[checkOtpWhenUserSubmit] - Activate transaction {} FAILED: {}", transactionId, ERROR_CODE.OTP_EXPIRED.getMessage());
 
                 throw new ApplicationException(ERROR_CODE.OTP_EXPIRED);
             }
@@ -111,7 +110,6 @@ public class OtpDomain {
     }
 
     public static String generateOTP() {
-        Random random = new Random();
         int otp = random.nextInt(1000000);
         return String.format("%06d", otp);
     }

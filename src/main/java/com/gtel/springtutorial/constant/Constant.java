@@ -1,5 +1,9 @@
 package com.gtel.springtutorial.constant;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Constant {
     public static final String OTP_PREFIX = "OTP-";
 
