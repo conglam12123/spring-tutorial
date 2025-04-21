@@ -20,8 +20,11 @@ public enum ERROR_CODE {
     RESOURCE_NOT_FOUND("ER_404", "Resource Not Found"),
     INTERNAL_SERVER_ERROR("ER_500", "Internal Server Error"),
     OTP_EXPIRED("ER_111", "OTP expired!"),
+    OTP_REQUIRED("ER_110", "OTP required!"),
     INCORRECT_OTP("ER_112", "Incorrect OTP!!"),
-    NO_TRANSACTION_FOUND("ERR_113", "No transaction found!!");
+    TRANSACTION_ID_REQUIRED("ER_115", "TransactionId required!"),
+    NO_TRANSACTION_FOUND("ERR_113", "No transaction found!!"),
+    PHONE_NUMBER_REQUIRED("ER_114", "Phone number required");
 
     private final String errorCode;
     private final String message;

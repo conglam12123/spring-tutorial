@@ -61,6 +61,10 @@ public class AuthService {
     public ResponseEntity<String> activateAccountWithOtp(String transactionId, String otp) {
         log.info("[activateAccountWithOtp]: activate account for transaction {}", transactionId);
 
+        if(!StringUtils.hasText(otp)) throw new ApplicationException(ERROR_CODE.OTP_REQUIRED);
+
+        if(!StringUtils.hasText(transactionId)) throw new ApplicationException(ERROR_CODE.TRANSACTION_ID_REQUIRED);
+
         UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(transactionId, otp);
 
         userRepo.save(new UserEntity(userRegisterRedisEntity));
@@ -118,6 +122,10 @@ public class AuthService {
     }
 
     private String validatePhoneNumber(String phoneNum) {
+        if (!StringUtils.hasText(phoneNum)) {
+            throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_REQUIRED);
+
+        }
         if (!Pattern.matches(RegexConstant.IS_PHONE_NUM, phoneNum))
             throw new ApplicationException(ERROR_CODE.PHONE_NUMBER_INVALID);
 

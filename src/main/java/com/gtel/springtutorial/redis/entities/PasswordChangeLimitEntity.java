@@ -1,7 +1,7 @@
 package com.gtel.springtutorial.redis.entities;
 
-import jakarta.persistence.Id;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
 @Data

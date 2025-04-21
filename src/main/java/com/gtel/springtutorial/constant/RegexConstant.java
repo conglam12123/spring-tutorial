@@ -6,7 +6,7 @@ public final class RegexConstant {
 
     public static final String IS_PHONE_NUM = "^\\d{10,11}";
 
-    public static final String PASSWORD_PATTERN = "^(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_])[A-Za-z\\d\\W_]{8,}$";
+    public static final String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[\\W_])[A-Za-z\\d\\W_]{8,}$";
 
     private RegexConstant() {
     }
