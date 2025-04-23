@@ -66,7 +66,6 @@ public class AuthService {
         if(!StringUtils.hasText(transactionId)) throw new ApplicationException(ERROR_CODE.TRANSACTION_ID_REQUIRED);
 
         UserRegisterRedisEntity userRegisterRedisEntity = otpDomain.checkOtpWhenUserSubmit(transactionId, otp);
-
         userRepo.save(new UserEntity(userRegisterRedisEntity));
 
         return ResponseEntity.ok().body("Register success!. You now can login with the password you submitted before.");
