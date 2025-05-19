@@ -24,7 +24,10 @@ public enum ERROR_CODE {
     INCORRECT_OTP("ER_112", "Incorrect OTP!!"),
     TRANSACTION_ID_REQUIRED("ER_115", "TransactionId required!"),
     NO_TRANSACTION_FOUND("ERR_113", "No transaction found!!"),
-    PHONE_NUMBER_REQUIRED("ER_114", "Phone number required");
+    PHONE_NUMBER_REQUIRED("ER_114", "Phone number required"),
+    USER_NOT_FOUND_OR_PASSWORD_INCORRECT("ER_401", "User not found or invalid password!"),
+    USER_NOT_FOUND("ER_400", "User not found")
+    ;
 
     private final String errorCode;
     private final String message;

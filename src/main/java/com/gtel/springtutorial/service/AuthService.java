@@ -3,9 +3,12 @@ package com.gtel.springtutorial.service;
 import com.gtel.springtutorial.constant.Message;
 import com.gtel.springtutorial.constant.RegexConstant;
 import com.gtel.springtutorial.domains.OtpDomain;
+import com.gtel.springtutorial.domains.impl.JwtDomain;
 import com.gtel.springtutorial.exception.ApplicationException;
 import com.gtel.springtutorial.model.entity.UserEntity;
+import com.gtel.springtutorial.model.request.LoginRequest;
 import com.gtel.springtutorial.model.request.RegisterRequest;
+import com.gtel.springtutorial.model.response.LoginResponse;
 import com.gtel.springtutorial.model.response.RegisterResponse;
 import com.gtel.springtutorial.redis.entities.PasswordChangeLimitEntity;
 import com.gtel.springtutorial.redis.entities.UserRegisterRedisEntity;
@@ -20,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.swing.text.html.Option;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -38,6 +42,8 @@ public class AuthService {
     final OtpProducer otpProducer;
 
     final OtpDomain otpDomain;
+
+    final JwtDomain jwtDomain;
 
     final PasswordChangeLimitRepository passwordChangeLimitRepository;
 
@@ -130,6 +136,26 @@ public class AuthService {
 
         return standardizePhoneNumber(phoneNum);
     }
+
+    public LoginResponse login (LoginRequest request) {
+
+        // User và password có khớp ?
+        Optional<UserEntity> userEntityOptional = userRepo.findByPhoneNumber(request.getPhoneNumber());
+        //Check user đã tồn tại
+        if(userEntityOptional.isEmpty()) {
+            throw new ApplicationException(ERROR_CODE.USER_NOT_FOUND);
+        }
+        UserEntity userEntity = userEntityOptional.get();
+        //Check password có khớp không
+        if (EncryptionUtils.bcryptPasswordCheck(userEntity.getPassword(), EncryptionUtils.bcryptEncode(request.getPassword())) ) {
+            throw new ApplicationException(ERROR_CODE.PASSWORD_NOT_MATCH);
+        }
+
+
+        String token = jwtDomain.genToken(request.getPhoneNumber());
+        return  new LoginResponse();
+    }
+
 
     private void validatePassword(String password) {
         if (!StringUtils.hasText(password)) {

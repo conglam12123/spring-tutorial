@@ -1,5 +1,6 @@
-package com.gtel.springtutorial.domains;
+package com.gtel.springtutorial.domains.impl;
 
+import com.gtel.springtutorial.domains.TokenDomain;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -16,7 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.function.Function;
 
 @Component
-public class JwtDomain {
+public class JwtDomain implements TokenDomain {
 
     @Value("${jwt.secretkey}")
     private String jwtSecret;
@@ -29,13 +30,22 @@ public class JwtDomain {
         key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String genJwt (String username) {
+    public String genToken (String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    @Override
+    public String validateToken(String token) {
+        return this.extractUsername(token);
+    }
+
+    @Override
+    public void extendTTL(String token) {
     }
 
     public String extractUsername(String token) {return extractClaim(token, Claims::getSubject);}

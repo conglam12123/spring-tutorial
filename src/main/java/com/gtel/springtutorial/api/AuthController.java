@@ -1,7 +1,9 @@
 package com.gtel.springtutorial.api;
 
 import com.gtel.springtutorial.model.request.ChangePasswordRequest;
+import com.gtel.springtutorial.model.request.LoginRequest;
 import com.gtel.springtutorial.model.request.RegisterRequest;
+import com.gtel.springtutorial.model.response.LoginResponse;
 import com.gtel.springtutorial.model.response.RegisterResponse;
 import com.gtel.springtutorial.service.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -30,4 +32,11 @@ public class AuthController {
     public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
         return authService.updatePassword(request.getPhoneNumber(), request.getOldPassword(), request.getNewPassword());
     }
+
+    @PostMapping(value = "/login")
+    public LoginResponse login (@RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
+
+
 }
